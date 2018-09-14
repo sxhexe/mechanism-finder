@@ -88,6 +88,10 @@ class ReactionRoute:
         self._filterFc = True
         self._noProduct = False
         self._allowedPairs = 2
+
+        self.picDir = "pics"
+        self.molPicFormat = 'svg'
+        self.jobName = "tmpName"
         if inputJson is not None:
             self.inputJson(inputJson)
 
@@ -138,6 +142,8 @@ class ReactionRoute:
             self._invalidStructures = params['invalidStructures']
         if 'allowedPairs' in params:
             self._allowedPairs = params['allowedPairs']
+        if 'jobName' in params:
+            self.jobName = params['jobName']
 
     def canBreakOrFormBond(self, atom, breakOrForm, nElec):
         # Decide if an atom can break or form bond in a certain way (get or lose certain number of electrons)
@@ -200,39 +206,6 @@ class ReactionRoute:
                 return 0
         except KeyError:
             return 0
-
-    # def createNewBond(self, mol, atom1, atom2, elecFromAtom1, elecFromAtom2):
-    #     # Create a bond in the searching process. Keeps track of bond order, formal charge, self._createdBonds and self._brokenBonds
-    #     bond = atom1.GetBond(atom2)
-    #     mol.BeginModify()
-    #     if bond == None:
-    #         bondOrder = 0
-    #         bond = mol.NewBond()
-    #         bond.SetBegin(atom1)
-    #         bond.SetEnd(atom2)
-    #         bond.SetBondOrder(1)
-    #         atom1.AddBond(bond)
-    #         atom2.AddBond(bond)
-    #     else:
-    #         bondOrder = bond.GetBondOrder()
-    #         bond.SetBondOrder(bond.GetBondOrder()+1)
-    #     if elecFromAtom1 == 0 and elecFromAtom2 == 2:
-    #         atom1.SetFormalCharge(atom1.GetFormalCharge()-1)
-    #         atom2.SetFormalCharge(atom2.GetFormalCharge()+1)
-    #     elif elecFromAtom1 == 2 and elecFromAtom2 == 0:
-    #         atom1.SetFormalCharge(atom1.GetFormalCharge()+1)
-    #         atom2.SetFormalCharge(atom2.GetFormalCharge()-1)
-    #     mol.EndModify()
-    #     if (atom1.GetIdx(), atom2.GetIdx(), elecFromAtom1, elecFromAtom2, bondOrder+1) not in self._brokenBonds:
-    #         # If the bond has been broken before, this is just restoring it, so the corresponding record in self._brokenBonds will be deleted and no new record is added.
-    #         self._createdBonds.append((atom1.GetIdx(), atom2.GetIdx(), elecFromAtom1, elecFromAtom2, bondOrder))
-    #         logging.debug("adding ({}, {}, {}, {}, {}) to createdBonds".format(atom1.GetIdx(), atom2.GetIdx(), elecFromAtom1, elecFromAtom2, bondOrder))
-    #     else:
-    #         # If the bond has not been broken before, it is a newly changed bond. We add the record to self._createdBonds.
-    #         self._brokenBonds.remove((atom1.GetIdx(), atom2.GetIdx(), elecFromAtom1, elecFromAtom2, bondOrder+1))
-    #         logging.debug("removing ({}, {}, {}, {}, {}) from brokenBonds".format(atom1.GetIdx(), atom2.GetIdx(), elecFromAtom1, elecFromAtom2, bondOrder+1))
-    #     logging.debug("new bond {} - {} is formed".format(atom1.GetIdx(), atom2.GetIdx()))
-    #     return bond
 
     def moveElec(self, mol, atom1Idx, atom2Idx, atom3Idx, nElec):
         mol.BeginModify()
@@ -310,35 +283,6 @@ class ReactionRoute:
             self.changeBondOrder(mol, i, j, +1)
             self.changeFormalCharge(mol, i, -1)
             self.changeFormalCharge(mol, j, -1)
-
-    # def breakBond(self, mol, atom1, atom2, elecToAtom1, elecToAtom2):
-    #     # Break a bond in the searching process. Keeps track of bond order, formal charge, self._createdBonds and self._brokenBonds
-    #     bond = atom1.GetBond(atom2)
-    #     if bond != None:
-    #         mol.BeginModify()
-    #         bondOrder = bond.GetBondOrder()
-    #         if bond.GetBondOrder() == 1:
-    #             mol.DeleteBond(bond)
-    #         elif bond.GetBondOrder() >= 2:
-    #             bond.SetBondOrder(bond.GetBondOrder()-1)
-    #         if elecToAtom1 == 0 and elecToAtom2 == 2:
-    #             atom1.SetFormalCharge(atom1.GetFormalCharge()+1)
-    #             atom2.SetFormalCharge(atom2.GetFormalCharge()-1)
-    #         elif elecToAtom1 == 2 and elecToAtom2 == 0:
-    #             atom1.SetFormalCharge(atom1.GetFormalCharge()-1)
-    #             atom2.SetFormalCharge(atom2.GetFormalCharge()+1)
-    #         mol.EndModify()
-    #         logging.debug("bond {} - {} is broken".format(atom1.GetIdx(), atom2.GetIdx()))
-    #         if (atom1.GetIdx(), atom2.GetIdx(), elecToAtom1, elecToAtom2, bondOrder-1) not in self._createdBonds:
-    #             logging.debug("adding ({}, {}, {}, {}, {}) to brokenBonds".format(atom1.GetIdx(), atom2.GetIdx(), elecToAtom1, elecToAtom2, bondOrder))
-    #             self._brokenBonds.append((atom1.GetIdx(), atom2.GetIdx(), elecToAtom1, elecToAtom2, bondOrder))
-    #         else:
-    #             logging.debug("removing ({}, {}, {}, {}, {}) from createdBonds".format(atom1.GetIdx(), atom2.GetIdx(), elecToAtom1, elecToAtom2, bondOrder-1))
-    #             self._createdBonds.remove((atom1.GetIdx(), atom2.GetIdx(), elecToAtom1, elecToAtom2, bondOrder-1))
-    #         return True
-    #     else:
-    #         logging.warning("No bond is found between atom {} and atom {}".format(atom1.GetIdx(), atom2.GetIdx()))
-    #         return False
 
     def checkStructure(self, molMat):
         # return True
@@ -522,7 +466,7 @@ class ReactionRoute:
         else:
             self._energyBaseLine = 0.0
         head.energy = 0.0
-        nStep = 0
+        nStep = -1
         while q:  # start Breadth-First-Search
             qSize = len(q)
             nStep += 1
@@ -621,7 +565,9 @@ class ReactionRoute:
                                     eSources.add((i, j))
                         logging.debug('eSources = {}'.format(eSources))
 
-                        def countChanges(atoms, redox):  # redox = -1 if oxidation else 1
+                        def countChanges(atoms, redox):
+                            # keep track of changes to A-BE by the redox operation
+                            # redox = -1 if oxidation else 1
                             if len(atoms) is 1:
                                 i = atoms[0]
                                 changeTable[(i, i)] += 2 * redox
@@ -803,7 +749,7 @@ class ReactionRoute:
                                             self.applyChanges(tempMat, changeTable, tboChange, fcChange)
                                             addMol([eSource1, eSource2], [eTarget1, eTarget2], tempMat)
 
-                else:
+                else: # not using matrixform
                     eSources = set()
                     for atom in oxidations['atom']:
                         eSources.add(atom.GetIdx())
@@ -834,187 +780,6 @@ class ReactionRoute:
                                     self.reduce(newMol, eTarget2)
                                     if self.checkLuisRule(eSource1, eSource2, eTarget1, eTarget2, mol=newMol):
                                         addMol([eSource1, eSource2], [eTarget1, eTarget2])
-
-                # Now consider all possible elementary reaction rule.
-                # Make a bond. Only considering two electron transfer.
-                # for atom1 in zeroElecGivers:
-                #     for atom2 in twoElecGivers:
-                #         if atom1 is not atom2:
-                #             logging.debug("<bondBreaking, bondForming> = <0,1>")
-                #             self.createNewBond(newMol, atom1, atom2, 0, 2)
-                #             addMol()
-                #             logging.debug("restoring")
-                #             self.breakBond(newMol, atom1, atom2, 0, 2)
-                #
-                # for atom1 in twoElecTakers:
-                #     # first bond changing is bond breaking, let's start looping over the atom that takes two electrons.
-                #     logging.info("--------attempting non-cyclic concerted two bonds breakings and two bond formations---------")
-                #     logging.debug("atom1 is {}, {}".format(atom1.GetIdx(), atom1.GetAtomicNum()))
-                #     bondsOfAtom1 = [bond for bond in ob.OBAtomBondIter(atom1)]
-                #     for brokenBond1 in bondsOfAtom1:
-                #         atom2 = brokenBond1.GetNbrAtom(atom1)
-                #         logging.debug("atom2 is {}, {}".format(atom2.GetIdx(), atom2.GetAtomicNum()))
-                #         if atom2 is None:
-                #             logging.error("atom2 is None!!!!")
-                #         if atom2.GetIdx() in self.ignoreList:
-                #             continue
-                #         logging.debug("try breaking first bond {} - {}".format(atom1.GetIdx(), atom2.GetIdx()))
-                #         # import pdb; pdb.set_trace()
-                #         for tempAtom in zeroElecTakers:
-                #             if atom2.GetIdx() == tempAtom.GetIdx():
-                #                 logging.debug("if finishing bond...")
-                #                 if self.breakBond(newMol, atom1, atom2, 2, 0) is None:
-                #                     logging.warning("bond {} - {} breaking failed".format(atom1.GetIdx(),atom2.GetIdx()))
-                #                     continue
-                #                 addMol()
-                #                 logging.debug("restoring : ")
-                #                 self.createNewBond(newMol, atom1, atom2, 2, 0)
-                #         logging.debug("if not finishing... breaking first bond {} - {}".format(atom1.GetIdx(), atom2.GetIdx()))
-                #         if self.breakBond(newMol, atom1, atom2, 2, 0) is None:
-                #             logging.warning("bond {} - {} breaking failed".format(atom1.GetIdx(),atom2.GetIdx()))
-                #             continue
-                #
-                #         for atom3 in ob.OBMolAtomIter(newMol):
-                #             logging.debug("atom3 is {}, {}".format(atom3.GetIdx(), atom3.GetAtomicNum()))
-                #             if atom3.GetIdx() in self.ignoreList or atom3 == atom1 or atom3 == atom2:
-                #                 continue
-                #             logging.debug("try making first bond {} - {}".format(atom2.GetIdx(), atom3.GetIdx()))
-                #             for tempAtom in twoElecGivers:
-                #                 if atom3.GetIdx() == tempAtom.GetIdx():
-                #                     logging.debug("if finishing bond...")
-                #                     if self.createNewBond(newMol, atom2, atom3, 0, 2) is None:
-                #                         logging.warning("bond {} - {} creation failed".format(atom2.GetIdx(),atom3.GetIdx()))
-                #                         continue
-                #                     addMol()
-                #                     logging.debug("restoring...")
-                #                     self.breakBond(newMol, atom2, atom3, 0, 2)
-                #             logging.debug("if not finishing... creating first bond {} - {}".format(atom2.GetIdx(), atom3.GetIdx()))
-                #             formedBond1 = self.createNewBond(newMol, atom2, atom3, 0, 2)
-                #             if formedBond1 is None:
-                #                 logging.warning("bond {} - {} creation failed".format(atom2.GetIdx(), atom3.GetIdx()))
-                #                 continue
-                #             nNewBond = 0
-                #             if formedBond1.GetBondOrder() == 1:
-                #                 nNewBond += 1
-                #             bondsOfAtom3 = [bond for bond in ob.OBAtomBondIter(atom3)]
-                #             for brokenBond2 in bondsOfAtom3:
-                #                 atom4 = brokenBond2.GetNbrAtom(atom3)
-                #                 logging.debug("atom4 is {}, {}".format(atom4.GetIdx(), atom4.GetAtomicNum()))
-                #                 if atom4.GetIdx() in self.ignoreList or atom4 == atom2 or atom4 == atom1:
-                #                     continue
-                #                 logging.debug("try breaking second bond {} - {}".format(atom3.GetIdx(), atom4.GetIdx()))
-                #                 for tempAtom in zeroElecTakers:
-                #                     if atom4.GetIdx() == tempAtom.GetIdx():
-                #                         logging.debug("if finishing bond...")
-                #                         if self.breakBond(newMol, atom3, atom4, 2, 0) is None:
-                #                             logging.warning("bond {} - {} breaking failed".format(atom3.GetIdx(),atom4.GetIdx()))
-                #                             continue
-                #                         addMol()
-                #                         logging.debug("restoring...")
-                #                         self.createNewBond(newMol, atom3, atom4, 2, 0)
-                #                 logging.debug("if not finishing... breaking second bond {} - {}".format(atom3.GetIdx(), atom4.GetIdx()))
-                #                 if self.breakBond(newMol, atom3, atom4, 2, 0) is None:
-                #                     logging.warning("bond {} - {} breaking failed".format(atom3.GetIdx(),atom4.GetIdx()))
-                #                     continue
-                #                 # for tempAtom in twoElecGivers:
-                #                 #     if atom5.GetIdx() == tempAtom.GetIdx():
-                #                 for atom5 in twoElecGivers:
-                #                     logging.debug("atom5 is {}, {}".format(atom5.GetIdx(), atom5.GetAtomicNum()))
-                #                     if atom5 == atom1 or atom5 == atom3 or atom5 == atom4:
-                #                         continue
-                #                     logging.debug("try making second bond {} - {}".format(atom4.GetIdx(), atom5.GetIdx()))
-                #                     formedBond2 = self.createNewBond(newMol, atom4, atom5, 0, 2)
-                #                     if formedBond2 is None:
-                #                         logging.warning("bond {} - {} creation failed".format(atom4.GetIdx(), atom5.GetIdx()))
-                #                         continue
-                #                     nNewBond2 = nNewBond
-                #                     if formedBond2.GetBondOrder() == 1:
-                #                         nNewBond2 = nNewBond2 + 1
-                #                     if nNewBond2 >= 2 and atom5.GetIdx() != atom2.GetIdx():
-                #                         logging.debug("nNewBond2 = {}".format(nNewBond2))
-                #                         logging.debug("we have two newly formed single bonds now, trying to rewind")
-                #                         logging.debug("restoring...")
-                #                         self.breakBond(newMol, atom4, atom5, 0, 2)
-                #                         continue
-                #                     addMol()
-                #                     logging.debug("restoring...")
-                #                     self.breakBond(newMol, atom4, atom5, 0, 2)
-                #                 logging.debug("restoring...")
-                #                 self.createNewBond(newMol, atom3, atom4, 2, 0)
-                #             logging.debug("restoring...")
-                #             self.breakBond(newMol, atom2, atom3, 0, 2)
-                #         logging.debug("restoring...")
-                #         self.createNewBond(newMol, atom1, atom2, 2, 0)
-                #
-                # for atom1 in ob.OBMolAtomIter(newMol):
-                #     logging.debug("atom1 is {}, {}".format(atom1.GetIdx(), atom1.GetAtomicNum()))
-                #     if atom1.GetIdx() in self.ignoreList:
-                #         logging.debug("atom1 is ignored")
-                #         continue
-                #     logging.info("--------attempting cyclic concerted two bonds breakings and two bond formations----------")
-                #     bondsOfAtom1 = [bond for bond in ob.OBAtomBondIter(atom1)]
-                #     for brokenBond1 in bondsOfAtom1:
-                #         atom2 = brokenBond1.GetNbrAtom(atom1)
-                #         logging.debug("atom2 is {}, {}".format(atom2.GetIdx(), atom2.GetAtomicNum()))
-                #         if atom2.GetIdx() in self.ignoreList:
-                #             logging.debug("atom2 is ignored")
-                #             continue
-                #         logging.debug("try breaking first bond {} - {}".format(atom1.GetIdx(), atom2.GetIdx()))
-                #         if self.breakBond(newMol, atom1, atom2, 2, 0) is None:
-                #             logging.warning("bond {} - {} breaking failed".format(atom1.GetIdx(),atom2.GetIdx()))
-                #             continue
-                #         for atom3 in ob.OBMolAtomIter(newMol):
-                #             if atom3.GetIdx() in self.ignoreList:
-                #                 logging.debug("atom3 is ignored")
-                #                 continue
-                #             if atom3 == atom1 or atom3 == atom2:
-                #                 continue
-                #             logging.debug("try making first bond {} - {}".format(atom2.GetIdx(), atom3.GetIdx()))
-                #             formedBond1 = self.createNewBond(newMol, atom2, atom3, 0, 2)
-                #             if formedBond1 is None:
-                #                 logging.warning("bond {} - {} creation failed".format(atom2.GetIdx(), atom3.GetIdx()))
-                #                 continue
-                #             nNewBond = 0
-                #             if formedBond1.GetBondOrder() == 1:
-                #                 nNewBond += 1
-                #             bondsOfAtom3 = [bond for bond in ob.OBAtomBondIter(atom3)]
-                #             for brokenBond2 in bondsOfAtom3:
-                #                 atom4 = brokenBond2.GetNbrAtom(atom3)
-                #                 logging.debug("atom4 is {}, {}".format(atom4.GetIdx(), atom4.GetAtomicNum()))
-                #                 if atom4.GetIdx() in self.ignoreList or atom4 == atom2 or atom4 == atom1:
-                #                     continue
-                #                 logging.debug("try breaking second bond {} - {}".format(atom3.GetIdx(), atom4.GetIdx()))
-                #                 if self.breakBond(newMol, atom3, atom4, 2, 0) is None:
-                #                     logging.warning("bond {} - {} breaking failed".format(atom3.GetIdx(),atom4.GetIdx()))
-                #                     continue
-                #                 logging.debug("try making second bond {} - {}".format(atom4.GetIdx(), atom1.GetIdx()))
-                #                 formedBond2 = self.createNewBond(newMol, atom4, atom1, 0, 2)
-                #                 if formedBond2 is None:
-                #                     logging.warning("bond {} - {} creation failed".format(atom4.GetIdx(),atom1.GetIdx()))
-                #                 nNewBond2 = nNewBond
-                #                 if formedBond2.GetBondOrder() == 1:
-                #                     nNewBond2 += 1
-                #                 if nNewBond2 >= 2 and (newMol.GetBond(atom1, atom3) or newMol.GetBond(atom2, atom4)):
-                #                     # 1 - 2 break      1--2          1  2
-                #                     # 2 - 3 form              --->   |  |
-                #                     # 3 - 4 break      4--3          4  3
-                #                     # 4 - 1 form
-                #                     # This is allowed only if there is no bond between 1 - 3 and 2 - 4.
-                #                     # If 1 - 3 were bonded this would just be a group exchange of 2 and 4. The same for 2 - 4.
-                #                     logging.debug("simple group exchange is not allowed. rewinding...")
-                #                     logging.debug("restoring...")
-                #                     self.breakBond(newMol, atom4, atom1, 0, 2)
-                #                     self.createNewBond(newMol, atom3, atom4, 2, 0)
-                #                     continue
-                #                 addMol()
-                #                 logging.debug("restoring...")
-                #                 self.breakBond(newMol, atom4, atom1, 0, 2)
-                #                 logging.debug("restoring...")
-                #                 self.createNewBond(newMol, atom3, atom4, 2, 0)
-                #             logging.debug("restoring...")
-                #             self.breakBond(newMol, atom2, atom3, 0, 2)
-                #         logging.debug("restoring...")
-                #         self.createNewBond(newMol, atom1, atom2, 2, 0)
 
         if not self._noProduct:
             logging.info("targetSmiles = " + self._productString)
@@ -1051,10 +816,11 @@ class ReactionRoute:
         visited = set()
         if not os.path.isdir("dot"):
             os.system("mkdir dot")
-        if not os.path.isdir("static" + os.sep + "pics"):
-            os.system("mkdir static" + os.sep + "pics")
+        if not os.path.isdir(self.picDir):
+            os.system("mkdir {}".format(self.picDir))
+        pwd = os.path.dirname(os.path.realpath(__file__))
         with open("dot" + os.sep + "dot.gv", "w") as dotFile:
-            dotFile.write("digraph G  {\nconcentrate = true\n")
+            dotFile.write('digraph G  {\nconcentrate = true\nimagepath="' + pwd + os.sep + self.picDir + '"\n')
             edges = []
             nNodes = 0
             while len(q) > 0:
@@ -1065,20 +831,21 @@ class ReactionRoute:
                     if currEdge.node.smiles not in visited:
                         visited.add(currEdge.node.smiles)
                         fileString = smilesToFilename(currEdge.node.smiles)
-                        formatString = 'svg'
-                        with open("static" + os.sep + "pics" + os.sep + fileString + '.' + formatString,
-                                  'w') as picFile:
-                            picFile.write(printMol(strToMol('smi', currEdge.node.smiles), "svg"))
-                        if self._doCalculation:
-                            dotFile.write(
-                                "    \"" + currEdge.node.smiles + "\" [image = \".." + os.sep + "static" + os.sep +
-                                "pics" + os.sep + fileString + '.' + formatString + "\", label = \"" +
-                                str(currEdge.node.energy) + " kcal/mol\", shape = none, labelloc = b]\n")
+                        formatString = self.molPicFormat
+                        if formatString == 'png':
+                            molToPngFile(strToMol('smi', currEdge.node.smiles),
+                                         self.picDir + os.sep + fileString + '.' + formatString)
                         else:
-                            dotFile.write(
-                                "    \"" + currEdge.node.smiles + "\" [image = \".." + os.sep + "static" + os.sep +
-                                "pics" + os.sep + fileString + '.' + formatString +
-                                "\", label = \"\", shape = none, labelloc = b]\n")
+                            with open(self.picDir + os.sep + fileString + '.' + formatString,
+                                      'w') as picFile:
+                                picFile.write(printMol(strToMol('smi', currEdge.node.smiles), formatString))
+                        if self._doCalculation:
+                            dotFile.write('"{}" [image="{}.{}", label="{} kcal/mol", shape=none, labelloc=b]'
+                                          .format(currEdge.node.smiles, fileString, formatString,
+                                                  str(currEdge.node.energy)))
+                        else:
+                            dotFile.write('"{}" [image="{}.{}", label="", shape=none, labelloc=b]'
+                                          .format(currEdge.node.smiles, fileString, formatString))
                         for molSmiles, nextEdge in currEdge.node.neighbors.items():
                             if self._pathOnly and nextEdge.onPath or not self._pathOnly:
                                 q.append(nextEdge)
@@ -1142,31 +909,31 @@ class ReactionRoute:
                         node.neighbors[path[i + 1].smiles].onPath = True
                         path[i + 1].onPath = True
 
-    def printGraphicPathMap(self, paths):
-        if not os.path.isdir("dot"):
-            os.system("mkdir dot")
-        if not os.path.isdir("static" + os.sep + "pics"):
-            os.system("mkdir static" + os.sep + "pics")
-        dotFile = open("dot" + os.sep + "paths.gv", 'w')
-        dotFile.write("digraph paths {")
-        visitedNode = set()
-        visitedEdge = set()
-        for path in paths:
-            for i, node in enumerate(path):
-                if node not in visitedNode:
-                    visitedNode.add(node)
-                    if self._doCalculation:
-                        node.energy = self.computeQMEnergy(node.mol, "gaussian", self._gaussianKeywords,
-                                                           self._fragmentEnergyMap)
-                    dotFile.write(
-                        "    \"" + node.smiles + "\" [image = \".." + os.sep + "static" + os.sep + "pics" + os.sep
-                        + smilesToFilename(node.smiles) + ".svg\", label = \""
-                        + str(node.energy) + " kcal/mol\", shape = none, labelloc = b]\n")
-                if i < len(path) - 1:
-                    if (node, path[i + 1]) not in visitedEdge:
-                        visitedEdge.add((node, path[i + 1]))
-                        dotFile.write("    \"" + node.smiles + "\" -> \"" + path[i + 1].smiles + "\";\n")
-        dotFile.write("}\n")
+    # def printGraphicPathMap(self, paths):
+    #     if not os.path.isdir("dot"):
+    #         os.system("mkdir dot")
+    #     if not os.path.isdir("static" + os.sep + "pics"):
+    #         os.system("mkdir static" + os.sep + "pics")
+    #     dotFile = open("dot" + os.sep + "paths.gv", 'w')
+    #     dotFile.write("digraph paths {")
+    #     visitedNode = set()
+    #     visitedEdge = set()
+    #     for path in paths:
+    #         for i, node in enumerate(path):
+    #             if node not in visitedNode:
+    #                 visitedNode.add(node)
+    #                 if self._doCalculation:
+    #                     node.energy = self.computeQMEnergy(node.mol, "gaussian", self._gaussianKeywords,
+    #                                                        self._fragmentEnergyMap)
+    #                 dotFile.write(
+    #                     "    \"" + node.smiles + "\" [image = \".." + os.sep + "static" + os.sep + "pics" + os.sep
+    #                     + smilesToFilename(node.smiles) + ".svg\", label = \""
+    #                     + str(node.energy) + " kcal/mol\", shape = none, labelloc = b]\n")
+    #             if i < len(path) - 1:
+    #                 if (node, path[i + 1]) not in visitedEdge:
+    #                     visitedEdge.add((node, path[i + 1]))
+    #                     dotFile.write("    \"" + node.smiles + "\" -> \"" + path[i + 1].smiles + "\";\n")
+    #     dotFile.write("}\n")
 
     # def getTsEstim(self, node, edge):
     #     mol1 = pybel.readstring('sdf', pybel.Molecule(node.mol).write('sdf'))
@@ -1283,12 +1050,6 @@ if __name__ == "__main__":
                              'will be generated instead to help you select active atoms. ')
     args = parser.parse_args()
 
-    # for i, arg in enumerate(sys.argv):
-    #     if arg[0] == '-':
-    #         if i+1 < len(sys.argv) and sys.argv[i+1][0] != '-':
-    #             flags[arg[1:]] = sys.argv[i+1]
-    #         else:
-    #             flags[arg[1:]] = ''
     if not args.j and not args.r:
         parser.error('at least a reactant should be provided, either in an input file or through -r option')
     if args.j:
@@ -1333,13 +1094,13 @@ if __name__ == "__main__":
     #     rr.findTsOnPath(head)
     edges = rr.printGraphicReactionMap(head)
     print(edges)
-    if inputName is not None:
-        with open('dot' + os.sep + '{}.gv'.format(inputName), 'w') as dotF:
-            with open('{}.json'.format(inputName)) as inputF:
-                for line in inputF:
-                    dotF.write('//{}'.format(line))
-            with open('dot' + os.sep + 'dot.gv') as dotF_origin:
-                dotF.write(dotF_origin.read())
-        print("dot -Tsvg dot" + os.sep + "dot.gv -o dot" + os.sep + "{}.svg".format(inputName))
-        os.chdir("dot")
-        os.system("dot -Tsvg dot.gv -o {}.svg".format(inputName))
+    if rr.jobName == 'tmpName':
+        rr.jobName = os.path.basename(inputName)
+    with open('dot' + os.sep + '{}.gv'.format(rr.jobName), 'w') as dotF:
+        with open('{}.json'.format(inputName)) as inputF:
+            for line in inputF:
+                dotF.write('//{}'.format(line))
+        with open('dot' + os.sep + 'dot.gv') as dotF_origin:
+            dotF.write(dotF_origin.read())
+    print("dot -Tsvg dot" + os.sep + "dot.gv -o dot" + os.sep + "{}.svg".format(rr.jobName))
+    os.system("dot -Tsvg dot{}dot.gv -o {}{}{}.svg".format(os.sep, rr.picDir, os.sep, rr.jobName))

@@ -168,3 +168,5 @@ fabric.properties
 .idea/httpRequests
 
 /reactionroute.db
+/static/
+/log

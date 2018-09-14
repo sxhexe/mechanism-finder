@@ -1,16 +1,18 @@
+import pybel
 import openbabel as ob
 import logging
 import numpy as np
+from collections import deque
 ALLOWED_COORD = {(1,-1):[],
                  (1,0):[1],
-                 # (1,1):[0],
+                 (1,1):[0],
                  (3,0):[3],
                  (3,1):[],
                  (4,0):[2],
                  (5,-1):[2],
                  (5,0):[3],
                  (5,1):[4],
-                 # (6,-1):[3],
+                 (6,-1):[3],
                  (6,0):[4], # there is a bug in smiles about carbene, so we are not allowing carbene here.
                  (6,1):[3],
                  (7,-1):[2],
@@ -60,16 +62,23 @@ def printMol(mol,fileFormat = "gjf", keywords = None, printOut = False):
     if printOut:
         logging.info("printing the molecule")
         logging.info(conv.WriteString(mol, True))
-    if keywords is not None:
-        conv.AddOption("k", ob.OBConversion.OUTOPTIONS, keywords)
-    if fileFormat == 'svg':
+    if fileFormat == 'gjf':
+        if keywords is not None:
+            conv.AddOption("k", ob.OBConversion.OUTOPTIONS, keywords)
+        else:
+            conv.AddOption("b", ob.OBConversion.OUTOPTIONS)
+    elif fileFormat == 'svg':
         conv.AddOption("C", ob.OBConversion.OUTOPTIONS)
         tmpMol = ob.OBMol(mol)
         # tmpMol.DeleteHydrogens()
         return conv.WriteString(tmpMol, True)
-    elif fileFormat == 'gjf':
-        conv.AddOption("b", ob.OBConversion.OUTOPTIONS)
+    else:
+        raise Exception("file format not supported in printMol")
     return conv.WriteString(mol, True)
+
+def molToPngFile(mol, filename):
+    mol = pybel.Molecule(mol)
+    mol.draw(False, filename)
 
 def printAtom(atom):
     logging.debug('atom index {}, atomic number {}'.format(atom.GetIdx(), atom.GetAtomicNum()))
@@ -204,7 +213,7 @@ def separateFragments(pymol, dist=3.0):
             fragments[-1].add(curr)
         else:
             curr = unvisited.pop()
-            fragments.append(set([curr]))
+            fragments.append({curr})
         atom = mol.GetAtom(curr)
         for nbr in ob.OBAtomAtomIter(atom):
             nbrNum = nbr.GetIdx()
