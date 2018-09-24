@@ -93,6 +93,7 @@ class ReactionRoute:
         self.picDir = "pics"
         self.molPicFormat = 'svg'
         self.jobName = "tmpName"
+        self.fast = False
         if inputJson is not None:
             self.inputJson(inputJson)
 
@@ -833,13 +834,14 @@ class ReactionRoute:
                         visited.add(currEdge.node.smiles)
                         fileString = smilesToFilename(currEdge.node.smiles)
                         formatString = self.molPicFormat
-                        if formatString == 'png':
-                            molToPngFile(strToMol('smi', currEdge.node.smiles),
-                                         self.picDir + os.sep + fileString + '.' + formatString)
-                        else:
-                            with open(self.picDir + os.sep + fileString + '.' + formatString,
-                                      'w') as picFile:
-                                picFile.write(printMol(strToMol('smi', currEdge.node.smiles), formatString))
+                        if not self.fast:
+                            if formatString == 'png':
+                                molToPngFile(strToMol('smi', currEdge.node.smiles),
+                                             self.picDir + os.sep + fileString + '.' + formatString)
+                            else:
+                                with open(self.picDir + os.sep + fileString + '.' + formatString,
+                                          'w') as picFile:
+                                    picFile.write(printMol(strToMol('smi', currEdge.node.smiles), formatString))
                         if self._doCalculation:
                             dotFile.write('"{}" [image="{}.{}", label="{} kcal/mol", shape=none, labelloc=b]'
                                           .format(currEdge.node.smiles, fileString, formatString,
@@ -1103,5 +1105,6 @@ if __name__ == "__main__":
                 dotF.write('//{}'.format(line))
         with open('dot' + os.sep + 'dot.gv') as dotF_origin:
             dotF.write(dotF_origin.read())
-    print("dot -Tsvg dot" + os.sep + "dot.gv -o dot" + os.sep + "{}.svg".format(rr.jobName))
-    os.system("dot -Tsvg dot{}dot.gv -o {}{}{}.svg".format(os.sep, rr.picDir, os.sep, rr.jobName))
+    if not rr.fast:
+        print("dot -Tsvg dot" + os.sep + "dot.gv -o dot" + os.sep + "{}.svg".format(rr.jobName))
+        os.system("dot -Tsvg dot{}dot.gv -o {}{}{}.svg".format(os.sep, rr.picDir, os.sep, rr.jobName))
