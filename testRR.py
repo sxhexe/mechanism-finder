@@ -40,6 +40,7 @@ class TestRR(unittest.TestCase):
     maxDiff = None
 
     def routine(self, rr):
+        rr._allowedCoordNum = ALLOWED_COORD
         head, target = rr.isomerSearch()
         paths = []
         rr.findDfsPath(head, target, paths, rr._targetLeastStep)
@@ -49,6 +50,7 @@ class TestRR(unittest.TestCase):
 
     def test_addition(self):
         rr = ReactionRoute(inputJson='{"reactant": "C=C.Cl", "product": "CCCl"}')
+        # rr._maxStep = 3
         edges = self.routine(rr)
         self.assertEqual(edges, sorted([('C=C.Cl', 'C[CH2+].[Cl-]'),
                                         ("C=C.Cl", "ClC=C.[H][H]"),

@@ -5,14 +5,14 @@ import numpy as np
 from collections import deque
 ALLOWED_COORD = {(1,-1):[],
                  (1,0):[1],
-                 (1,1):[0],
+                 # (1,1):[0],
                  (3,0):[3],
                  (3,1):[],
                  (4,0):[2],
                  (5,-1):[2],
                  (5,0):[3],
                  (5,1):[4],
-                 (6,-1):[3],
+                 # (6,-1):[3],
                  (6,0):[4], # there is a bug in smiles about carbene, so we are not allowing carbene here.
                  (6,1):[3],
                  (7,-1):[2],
@@ -70,6 +70,16 @@ def printMol(mol,fileFormat = "gjf", keywords = None, printOut = False):
     elif fileFormat == 'svg':
         conv.AddOption("C", ob.OBConversion.OUTOPTIONS)
         tmpMol = ob.OBMol(mol)
+        # due to a depiction bug (https://github.com/openbabel/openbabel/issues/1889), fragments containing ions
+        # needs to be
+        # smiles = getCanonicalSmiles(mol)
+        # fragments = smiles.split('.')
+        # print "fragments are", fragments
+        # if fragments[0][-2] in '+-':
+        #     fragments = fragments[1:] + fragments[0:1]
+        #     newSmiles = '.'.join(fragments)
+        #     tmpMol = ob.OBMol(strToMol('smi', newSmiles))
+
         # tmpMol.DeleteHydrogens()
         return conv.WriteString(tmpMol, True)
     else:

@@ -48,7 +48,8 @@ class ReactionGraphNode:
 class ReactionRoute:
     def __init__(self, reactantString=None, productString=None, inputJson=None):
         # An equality holds for all atom: total bond order + # of non-bonding electrons = # of valence electrons + formal charge
-        # This gives rise to the following rules for each atom. Atomic number determines the number of valence electrons, formal charge is formal charge, then there is total bond order. Once these three is fixed, the Luis structure is determined.
+        # This gives rise to the following rules for each atom. Atomic number determines the number of valence electrons,
+        # formal charge is formal charge, then there is total bond order. Once these three is fixed, the Luis structure is determined.
         self._allowedCoordNum = ALLOWED_COORD
         self._minFc = {}
         for pair, tboList in self._allowedCoordNum.items():
@@ -59,7 +60,7 @@ class ReactionRoute:
                     self._minFc[pair[0]] = min(self._minFc[pair[0]], pair[1])
 
         self._outputLevel = 2
-        self._maxStep = 3
+        self._maxStep = 2
         self._maxExtraStep = 1
         self._doCalculation = False
         self._structureScreen = True
@@ -466,13 +467,13 @@ class ReactionRoute:
         else:
             self._energyBaseLine = 0.0
         head.energy = 0.0
-        nStep = -1
+        nStep = 0
         while q:  # start Breadth-First-Search
             qSize = len(q)
             nStep += 1
             logging.info("=========================================================")
             logging.info("                     nStep = " + str(nStep))
-            if nStep >= self._maxStep or nStep > self._targetLeastStep + self._maxExtraStep:
+            if nStep > self._maxStep or nStep > self._targetLeastStep + self._maxExtraStep:
                 logging.info("step number {}, exceeding maximum step {}".format(nStep, min(self._maxStep,
                                                                                            self._targetLeastStep + self._maxExtraStep)))
                 break
