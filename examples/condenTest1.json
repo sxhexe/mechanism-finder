@@ -1,0 +1,5 @@
+{
+    "reactant": "C[O-].CC(=O)C",
+    "product": "CO.C=C([O-])C",
+    "activeList": [2,3,4,5,11]
+}

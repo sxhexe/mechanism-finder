@@ -1,0 +1,12 @@
+{
+  "reactant": "CCC=O.C=CC=O.[OH-]",
+  "_comment": "[O-]C=CCC(C=O)C.O","product": "C(C=O)(C)CCC=O.[OH-]",
+  "activeList": [2,3,4,5,6,7,8,9,14],
+  "pathOnly": true,
+  "preEnergyScreen": true,
+  "gsub": true,
+  "save": true,
+  "doCalculation": true,
+  "intermediateThresh": 20,
+  "gaussianKeywords": "#p pm6 scrf=(cpcm,solvent=ethanol)"
+}
