@@ -1079,7 +1079,9 @@ if __name__ == "__main__":
         pymol.title = 'for select active atoms'
         pymol.addh()
         pymol.localopt()
-        with open('activeatoms.com', 'w') as f:
+        if not os.path.isdir("activeAtoms"):
+            os.system("mkdir activeAtoms")
+        with open('activeAtoms{}{}.com'.format(os.sep, rr.jobName), 'w') as f:
             f.write(pymol.write('gjf'))
         exit()
 
