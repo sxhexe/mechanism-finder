@@ -12,7 +12,7 @@ ALLOWED_COORD = {(1,-1):[],
                  (5,-1):[2],
                  (5,0):[3],
                  (5,1):[4],
-                 (6,-1):[3],
+                 # (6,-1):[3],
                  (6,0):[4], # there is a bug in smiles about carbene, so we are not allowing carbene here.
                  (6,1):[3],
                  (7,-1):[2],

@@ -1,0 +1,10 @@
+{
+  "reactant": "CCC(=O)OCC.CCC(=O)OCC.CC[O-]",
+  "_comment": "[O-]C=CCC(C=O)C.O","product": "CCC(=O)C(C)C(=O)OCC.CCO.CC[O-]",
+  "activeList": [17,32,9,3,4,5,10,11],
+  "maxStep": 2,
+  "allowedPairs": 2,
+  "allowedCoord": {
+      "6,-1": []
+  }
+}

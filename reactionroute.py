@@ -146,6 +146,11 @@ class ReactionRoute:
             self._allowedPairs = params['allowedPairs']
         if 'jobName' in params:
             self.jobName = params['jobName']
+        if 'allowedCoord' in params:
+            coordNums = params['allowedCoord']
+            for atomAndValence, allowedNums in coordNums.items():
+                atomAndValence = tuple(map(int, atomAndValence.split(',')))
+                self._allowedCoordNum[atomAndValence] = allowedNums
 
     def canBreakOrFormBond(self, atom, breakOrForm, nElec):
         # Decide if an atom can break or form bond in a certain way (get or lose certain number of electrons)
