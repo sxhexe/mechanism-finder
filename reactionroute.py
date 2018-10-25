@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import itertools
 import os
 import sqlite3
@@ -52,7 +53,7 @@ class ReactionRoute:
         # formal charge is formal charge, then there is total bond order. Once these three is fixed, the Luis structure is determined.
         self._allowedCoordNum = ALLOWED_COORD
         self._minFc = {}
-        for pair, tboList in self._allowedCoordNum.items():
+        for pair, tboList in list(self._allowedCoordNum.items()):
             if tboList != []:
                 if pair[0] not in self._minFc:
                     self._minFc[pair[0]] = pair[1]
@@ -88,7 +89,8 @@ class ReactionRoute:
         self._matrixForm = True
         self._filterFc = True
         self._noProduct = False
-        self._allowedPairs = 2
+        self._allowedPairs = 3
+        self.timeTestOnly = False
 
         self.picDir = "pics"
         self.molPicFormat = 'svg'
@@ -148,30 +150,9 @@ class ReactionRoute:
             self.jobName = params['jobName']
         if 'allowedCoord' in params:
             coordNums = params['allowedCoord']
-            for atomAndValence, allowedNums in coordNums.items():
+            for atomAndValence, allowedNums in list(coordNums.items()):
                 atomAndValence = tuple(map(int, atomAndValence.split(',')))
                 self._allowedCoordNum[atomAndValence] = allowedNums
-
-    def canBreakOrFormBond(self, atom, breakOrForm, nElec):
-        # Decide if an atom can break or form bond in a certain way (get or lose certain number of electrons)
-        formalCharge = atom.GetFormalCharge()
-        atomicNum = atom.GetAtomicNum()
-        nBonds = 0
-        for bond in ob.OBAtomBondIter(atom):
-            nBonds += bond.GetBondOrder()
-        if breakOrForm.lower() == "break":
-            nBondChange = -1
-        elif breakOrForm.lower() == "form":
-            nBondChange = 1
-        else:
-            raise Exception("breakOrForm can either be break or form")
-        try:
-            if nBonds + nBondChange in self._allowedCoordNum[(atomicNum, formalCharge + nBondChange * (nElec - 1))]:
-                return 1
-            else:
-                return 0
-        except KeyError:
-            return 0
 
     def checkLuisRule(self, *args, **kwargs):
         for arg in args:
@@ -194,69 +175,7 @@ class ReactionRoute:
                 pair = (arg.GetAtomicNum(), arg.GetFormalCharge())
                 if pair not in self._allowedCoordNum or atomTotalBondOrder(atom) not in self._allowedCoordNum[pair]:
                     return False
-
         return True
-
-    def obeyLuisRule(self, atom, nBondChange, nElectronChange):
-        # Decide if an atom can break or form bond in a certain way (get or lose certain number of electrons)
-        formalCharge = atom.GetFormalCharge()
-        atomicNum = atom.GetAtomicNum()
-        nBonds = atomTotalBondOrder(atom)
-        if abs(nElectronChange) == 2:
-            formalChargeChange = -nElectronChange / 2
-        else:
-            raise Exception("one electron reaction not supported yet")
-        try:
-            if nBonds + nBondChange in self._allowedCoordNum[(atomicNum, formalCharge + formalChargeChange)]:
-                return 1
-            else:
-                return 0
-        except KeyError:
-            return 0
-
-    def moveElec(self, mol, atom1Idx, atom2Idx, atom3Idx, nElec):
-        mol.BeginModify()
-        atom1 = None if atom1Idx is None else mol.GetAtom(atom1Idx)
-        atom2 = None if atom2Idx is None else mol.GetAtom(atom2Idx)
-        atom3 = None if atom3Idx is None else mol.GetAtom(atom3Idx)
-        if atom1 is None:  # lone pair (atom2) to bond (atom2 - atom3)
-            atom2.SetFormalCharge(atom2.GetFormalCharge() + 1)
-            # ob.OBPairData(atom2.GetData('nLonePair')).SetValue(str(int(ob.OBPairData(atom.GetData('nLonePair')).GetValue())-2))
-            bond = mol.GetBond(atom2, atom3)
-            if bond is None:
-                mol.AddBond(atom2.GetIdx(), atom3.GetIdx(), 1)
-            else:
-                bond.SetBondOrder(bond.GetBondOrder() + 1)
-            atom3.SetFormalCharge(atom3.GetFormalCharge() - 1)
-        elif atom3 is None:  # bond (atom1 - atom2) to lone pair (atom2)
-            bond = mol.GetBond(atom1, atom2)
-            bondOrder = bond.GetBondOrder()
-            print('bondorder is {}'.format(bondOrder))
-            if bondOrder == 1:
-                mol.DeleteBond(bond)
-            else:
-                bond.SetBondOrder(bondOrder - 1)
-            atom1.SetFormalCharge(atom1.GetFormalCharge() + 1)
-            atom2.SetFormalCharge(atom2.GetFormalCharge() - 1)
-            # ob.OBPairData(atom2.GetData('nLonePair')).SetValue(str(int(ob.OBPairData(atom.GetData('nLonePair')).GetValue())+2))
-        else:  # bond1 (atom1 - atom2) to bond2 (atom2 - atom3)
-            bond1 = mol.GetBond(atom1, atom2)
-            bond2 = mol.GetBond(atom2, atom3)
-            atom1.SetFormalCharge(atom2.GetFormalCharge() + 1)
-            atom3.SetFormalCharge(atom3.GetFormalCharge() - 1)
-            bondOrder1 = bond1.GetBondOrder()
-            if bondOrder1 == 1:
-                mol.DeleteBond(bond1)
-            else:
-                bond1.SetBondOrder(bondOrder1 - 1)
-            if bond2 is None:
-                mol.AddBond(atom2.GetIdx(), atom3.GetIdx(), 1)
-            else:
-                bond2.SetBondOrder(bond2.GetBondOrder() + 1)
-        mol.EndModify()
-        printMol(mol, printOut=True)
-        for bond in ob.OBMolBondIter(mol):
-            printBond(bond)
 
     def changeFormalCharge(self, mol, idx, change):
         atom = mol.GetAtom(idx)
@@ -423,7 +342,7 @@ class ReactionRoute:
         raise EnergyReadingError("Can't read energy from gaussian output %s" % (fileName))
 
     def checkChangeTable(self, molMat, changeTable, tboChange, fcChange):
-        for atom in tboChange.keys() + fcChange.keys():
+        for atom in list(tboChange.keys()) + list(fcChange.keys()):
             newTbo = molMat[self.nAtom + 1][atom] + tboChange[atom]
             newFc = molMat[self.nAtom + 2][atom] + fcChange[atom]
             if newTbo not in self._allowedCoordNum.get((molMat[0][atom], newFc), []):
@@ -431,11 +350,11 @@ class ReactionRoute:
         return True
 
     def applyChanges(self, molMat, changeTable, tboChange, fcChange):
-        for item in changeTable.items():
+        for item in list(changeTable.items()):
             molMat[item[0][0]][item[0][1]] += item[1]
-        for item in tboChange.items():
+        for item in list(tboChange.items()):
             molMat[self.nAtom + 1][item[0]] += item[1]
-        for item in fcChange.items():
+        for item in list(fcChange.items()):
             molMat[self.nAtom + 2][item[0]] += item[1]
 
     def isomerSearch(self):
@@ -489,16 +408,9 @@ class ReactionRoute:
                 currNode = q.popleft()
                 if currNode.smiles == self._productString:
                     continue
-                currMol = ob.OBMol(currNode.mol)
+                # currMol = ob.OBMol(currNode.mol)
+                currMol = currNode.mol
 
-                oxidations = {'bond': set(), 'atom': set()}
-                for atom in ob.OBMolAtomIter(currMol):
-                    nLonePair = numValenceElectron(atom.GetAtomicNum()) - atomTotalBondOrder(
-                        atom) + atom.GetFormalCharge()
-                    if nLonePair > 0:
-                        oxidations['atom'].add(atom)
-                for bond in ob.OBMolBondIter(currMol):
-                    oxidations['bond'].add(bond)
 
                 def addMol(oxidized, reduced, tempMat=None):
                     logging.debug('in addMol')
@@ -537,7 +449,7 @@ class ReactionRoute:
                             else:
                                 logging.info("energy too high, discarded")
                         else:
-                            newNode = ReactionGraphNode(mol=newMol, depth=nStep)
+                            newNode = ReactionGraphNode(mol=newMol)
                             self._reactionMap[newMolSmiles] = newNode
                             if newMolSmiles not in currNode.neighbors:
                                 logging.info('adding the edge')
@@ -613,7 +525,7 @@ class ReactionRoute:
                                 countChanges(eSource1, -1)
                                 countChanges(eTarget1, 1)
                                 if self.checkChangeTable(molMat, changeTable, tboChange, fcChange):
-                                    tempMat = np.array(molMat)
+                                    tempMat = [list(x) for x in molMat]
                                     self.applyChanges(tempMat, changeTable, tboChange, fcChange)
                                     if self.checkStructure(tempMat):
                                         # logging.debug('\n'+str(tempMat))
@@ -650,7 +562,7 @@ class ReactionRoute:
                                 countChanges(eSource2, -1)
                                 countChanges(eTarget2, 1)
                                 if self.checkChangeTable(molMat, changeTable, tboChange, fcChange):
-                                    tempMat = np.array(molMat)
+                                    tempMat = [list(x) for x in molMat]
                                     self.applyChanges(tempMat, changeTable, tboChange, fcChange)
                                     if self.checkStructure(tempMat):
                                         addMol([eSource1, eSource2], [eTarget1, eTarget2], tempMat)
@@ -691,7 +603,7 @@ class ReactionRoute:
                                     countChanges(eSource3, -1)
                                     countChanges(eTarget3, 1)
                                     if self.checkChangeTable(molMat, changeTable, tboChange, fcChange):
-                                        tempMat = np.array(molMat)
+                                        tempMat = [list(x) for x in molMat]
                                         self.applyChanges(tempMat, changeTable, tboChange, fcChange)
                                         if self.checkStructure(tempMat):
                                             addMol([eSource1, eSource2, eSource3], [eTarget1, eTarget2, eTarget3],
@@ -736,7 +648,7 @@ class ReactionRoute:
                                 countChanges(eSource1, -1)
                                 countChanges(eTarget1, 1)
                                 if self.checkChangeTable(molMat, changeTable, tboChange, fcChange):
-                                    tempMat = np.array(molMat)
+                                    tempMat = [list(x) for x in molMat]
                                     self.applyChanges(tempMat, changeTable, tboChange, fcChange)
                                     addMol([eSource1], [eTarget1], tempMat)
 
@@ -752,11 +664,19 @@ class ReactionRoute:
                                         countChanges(eSource2, -1)
                                         countChanges(eTarget2, 1)
                                         if self.checkChangeTable(molMat, changeTable, tboChange, fcChange):
-                                            tempMat = np.array(molMat)
+                                            tempMat = [list(x) for x in molMat]
                                             self.applyChanges(tempMat, changeTable, tboChange, fcChange)
                                             addMol([eSource1, eSource2], [eTarget1, eTarget2], tempMat)
 
                 else: # not using matrixform
+                    oxidations = {'bond': set(), 'atom': set()}
+                    for atom in ob.OBMolAtomIter(currMol):
+                        nLonePair = numValenceElectron(atom.GetAtomicNum()) - atomTotalBondOrder(
+                            atom) + atom.GetFormalCharge()
+                        if nLonePair > 0:
+                            oxidations['atom'].add(atom)
+                    for bond in ob.OBMolBondIter(currMol):
+                        oxidations['bond'].add(bond)
                     eSources = set()
                     for atom in oxidations['atom']:
                         eSources.add(atom.GetIdx())
@@ -813,7 +733,7 @@ class ReactionRoute:
                 print(currEdge.node.smiles, 'b ', currEdge.eSources, 'c ', currEdge.eTargets),
                 if currEdge.node.smiles not in visited:
                     visited.add(currEdge.node.smiles)
-                    for molSmiles, nextEdge in currEdge.node.neighbors.items():
+                    for molSmiles, nextEdge in list(currEdge.node.neighbors.items()):
                         q.append(nextEdge)
         print
 
@@ -854,7 +774,7 @@ class ReactionRoute:
                         else:
                             dotFile.write('"{}" [image="{}.{}", label="", shape=none, labelloc=b]'
                                           .format(currEdge.node.smiles, fileString, formatString))
-                        for molSmiles, nextEdge in currEdge.node.neighbors.items():
+                        for molSmiles, nextEdge in list(currEdge.node.neighbors.items()):
                             if self._pathOnly and nextEdge.onPath or not self._pathOnly:
                                 q.append(nextEdge)
                                 edges.append((currEdge.node.smiles, nextEdge.node.smiles))
@@ -880,7 +800,7 @@ class ReactionRoute:
         if head == end:
             paths.append(path)
             return
-        for molSmiles, edge in head.neighbors.items():
+        for molSmiles, edge in list(head.neighbors.items()):
             if edge.node not in path:
                 self.findDfsPath(edge.node, end, paths, targetLeastStep, path=list(path))
 
@@ -1056,6 +976,7 @@ if __name__ == "__main__":
     parser.add_argument('-a', action='store_true',
                         help='selecting active atom mode. No search will be run. A gaussian input file '
                              'will be generated instead to help you select active atoms. ')
+    parser.add_argument('-t', help='only do timing test. ', action='store_true')
     args = parser.parse_args()
 
     if not args.j and not args.r:
@@ -1089,10 +1010,17 @@ if __name__ == "__main__":
         with open('activeAtoms{}{}.com'.format(os.sep, rr.jobName), 'w') as f:
             f.write(pymol.write('gjf'))
         exit()
+    if args.t:
+        rr.timeTestOnly = True
+        startTime = datetime.datetime.now()
+        rr.isomerSearch()
+        endTime = datetime.datetime.now()
+        print("time used: {}".format(endTime - startTime))
+        exit()
 
     # cProfile.run('head, target= rr.isomerSearch()')
-    head, target = rr.isomerSearch()
     # rr.printTextReactionMap(head)
+    head, target = rr.isomerSearch()
     if target is not None and not rr._noProduct:
         paths = []
         rr.findDfsPath(head, target, paths, rr._targetLeastStep)

@@ -18,9 +18,9 @@ def errorOrNormal(fileName):
 def logParser(logFile):
     # Assume that each log file only has one job, i.e., no --link1--.
     try:
-        mol = pybel.readfile('log', logFile).next()
+        mol = next(pybel.readfile('log', logFile))
     except StopIteration:
-        print 'pybel failed to read molecule from {}'.format(logFile)
+        print('pybel failed to read molecule from {}'.format(logFile))
         return {'result':'Error'}
     moldict = {
         'formula':mol.formula,

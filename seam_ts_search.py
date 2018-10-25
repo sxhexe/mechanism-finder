@@ -95,7 +95,7 @@ def SeamTsSearch(mol1, mol2, forcefield='uff'):
     direction = directionNew
     mol1 = updateCoords(mol1, c)
     mol2 = updateCoords(mol2, c)
-    for iteration in xrange(50):
+    for iteration in range(50):
         # print("\n\n============calculating iteration number {}".format(iteration))
         fNew, gNew = getFAndG(mol1, mol2)
         # logger.debug("fNew and gNew = ", fNew, gNew)

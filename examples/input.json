@@ -1,5 +1,5 @@
 {
-  "reactant": "CC(=O)C",
-  "product": "CC(O)=C",
+  "reactant": "CCCO",
+  "product": "CC=C.O",
   "jobName": "test"
 }

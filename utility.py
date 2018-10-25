@@ -175,7 +175,8 @@ def atomTotalBondOrder(atom):
 
 def molToMat(mol):
     n = mol.NumAtoms()
-    mat = np.array([[0 for _i in range(n+1)] for _j in range(n+3)])
+    # mat = np.zeros((n+3, n+1), dtype=int)
+    mat = [[0 for _i in range(n+1)] for _j in range(n+3)]
     for i in range(1, n+1):
         mat[i][0] = mol.GetAtom(i).GetAtomicNum()
         mat[0][i] = mat[i][0]
