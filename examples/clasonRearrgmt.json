@@ -1,0 +1,6 @@
+{
+  "reactant": "C=CCOC(=CC)C",
+  "product": "CC(C(=O)C)CC=C",
+  "jobName": "test",
+  "activeList": [1,2,3,4,5,6]
+}

@@ -959,7 +959,7 @@ class ReactionRoute:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="log", level=logging.DEBUG, filemode='w')
+    logging.basicConfig(filename="log", level=logging.INFO, filemode='w')
     rr = ReactionRoute()
     flags = {}
     inputName = None
