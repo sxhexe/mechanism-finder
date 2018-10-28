@@ -96,6 +96,10 @@ class ReactionRoute:
         self.molPicFormat = 'svg'
         self.jobName = "tmpName"
         self.fast = False
+
+        self.eSourceSizeRunningSum = [0, 0]
+        self.eTargetSizeRunningSum = [0, 0]
+
         if inputJson is not None:
             self.inputJson(inputJson)
 
@@ -573,6 +577,8 @@ class ReactionRoute:
 
                         if self._allowedPairs >= 3:
                             logging.debug('three pairs')
+                            self.eSourceSizeRunningSum[0] += len(eSources)
+                            self.eSourceSizeRunningSum[1] += 1
                             for eSource1, eSource2, eSource3 in itertools.combinations(eSources, 3):
                                 eTargets = set()
                                 canReduce = set()
@@ -590,6 +596,8 @@ class ReactionRoute:
                                 logging.debug(
                                     'eSource1 = {}, eSource2 = {}, eSource3 = {}'.format(eSource1, eSource2, eSource3))
                                 logging.debug('eTargets: {}'.format(eTargets))
+                                self.eTargetSizeRunningSum[0] += len(eTargets - selectedESources)
+                                self.eTargetSizeRunningSum[1] += 1
                                 for eTarget1, eTarget2, eTarget3 in itertools.combinations(eTargets - selectedESources,
                                                                                            3):
 
