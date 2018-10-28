@@ -1,0 +1,11 @@
+#! /bin/csh
+#$ -S /bin/csh
+#$ -q 16core.q
+#$ -cwd
+#$ -N timetest
+#$ -j y
+#$ -o timetest.qlog
+#$ -l mem_free=32G
+#$ -pe smp 2
+#
+python timetest.py

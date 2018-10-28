@@ -41,6 +41,7 @@ class TestRR(unittest.TestCase):
 
     def routine(self, rr):
         rr._allowedCoordNum = ALLOWED_COORD
+	rr._allowedPairs = 2
         head, target = rr.isomerSearch()
         paths = []
         rr.findDfsPath(head, target, paths, rr._targetLeastStep)
