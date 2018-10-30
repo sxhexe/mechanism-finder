@@ -14,6 +14,7 @@ with open('timetest_{}.log'.format(reactant), 'w') as logfile:
     for i in range(5):
         # job = rr.ReactionRoute(inputJson='{{"reactant": "{}", "product": "{}", "activeList": [{}]}}'.format(reactant, product, activeList))
         job = rr.ReactionRoute(inputJson='{{"reactant": "{}", "product": "{}"}}'.format(reactant, product))
+	job._allowedPairs = 2
         startTime = datetime.now()
         head, target = job.isomerSearch()
         endTime = datetime.now()

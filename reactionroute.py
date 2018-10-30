@@ -539,6 +539,9 @@ class ReactionRoute:
                             logging.debug('finishing this eTargets')
 
                         logging.debug('two pairs')
+			if self._allowedPairs == 2:
+			    self.eSourceSizeRunningSum[0] += len(eSources)
+			    self.eSourceSizeRunningSum[1] += 1
                         for eSource1, eSource2 in itertools.combinations(eSources, 2):
                             eTargets = set()
                             canReduce = set()
@@ -556,6 +559,9 @@ class ReactionRoute:
                                     eTargets.add((canReduce[i], canReduce[j]))
                             logging.debug('eSource1 = {}, eSource2 = {}'.format(eSource1, eSource2))
                             logging.debug('eTargets: {}'.format(eTargets))
+			    if self._allowedPairs == 2:
+                                self.eTargetSizeRunningSum[0] += len(eTargets - set(eSource1) - set(eSource2))
+                                self.eTargetSizeRunningSum[1] += 1
                             for eTarget1, eTarget2 in itertools.combinations(eTargets - set(eSource1) - set(eSource2),
                                                                              2):
                                 changeTable = defaultdict(int)
