@@ -7,11 +7,15 @@ products = ['C=C.O', 'CC=C.O', 'CCC=C.O', 'CCCC=C.O']
 # reactant = 'C=CCOC(=CC)C'
 # product = 'CC(C(=O)C)CC=C'
 # activeList = '1,2,3,4,5,6'
-reactant = 'CC=O'
-product = 'C=CO'
+#reactant = 'CC=O'
+#product = 'C=CO'
+reactant = 'CCO'
+product = 'C=C.O'
+#reactant = 'C=C.Br'
+#product = 'CCBr'
 
 with open('timetest_{}.log'.format(reactant), 'w') as logfile:
-    for i in range(5):
+    for i in range(1,2):
         # job = rr.ReactionRoute(inputJson='{{"reactant": "{}", "product": "{}", "activeList": [{}]}}'.format(reactant, product, activeList))
         job = rr.ReactionRoute(inputJson='{{"reactant": "{}", "product": "{}"}}'.format(reactant, product))
 	job._allowedPairs = 2
