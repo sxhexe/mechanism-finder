@@ -100,6 +100,7 @@ class ReactionRoute:
         self.eSourceSizeRunningSum = [0, 0]
         self.eTargetSizeRunningSum = [0, 0]
         self.addMolCount = 0
+        self.addMolTime = 0.0
 
         if inputJson is not None:
             self.inputJson(inputJson)
@@ -416,9 +417,9 @@ class ReactionRoute:
                 # currMol = ob.OBMol(currNode.mol)
                 currMol = currNode.mol
 
-
                 def addMol(oxidized, reduced, tempMat=None):
                     self.addMolCount += 1
+                    start = datetime.datetime.now()
                     logging.debug('in addMol')
                     logging.debug('oxidized: {}\nreduced: {}'.format(oxidized, reduced))
                     if self._matrixForm:
@@ -475,6 +476,7 @@ class ReactionRoute:
                                                                                      self._reactionMap[newMolSmiles],
                                                                                      oxidized, reduced)
                     logging.debug("finish adding this molecule, no matter added or not")
+                    self.addMolTime += (datetime.datetime.now() - start).total_seconds()
                     # ====================the end of addMol====================
 
                 if self._matrixForm:
