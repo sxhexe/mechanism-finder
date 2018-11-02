@@ -99,6 +99,7 @@ class ReactionRoute:
 
         self.eSourceSizeRunningSum = [0, 0]
         self.eTargetSizeRunningSum = [0, 0]
+        self.addMolCount = 0
 
         if inputJson is not None:
             self.inputJson(inputJson)
@@ -417,6 +418,7 @@ class ReactionRoute:
 
 
                 def addMol(oxidized, reduced, tempMat=None):
+                    self.addMolCount += 1
                     logging.debug('in addMol')
                     logging.debug('oxidized: {}\nreduced: {}'.format(oxidized, reduced))
                     if self._matrixForm:
